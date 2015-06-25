@@ -40,7 +40,7 @@ hash bower 2>/dev/null || {
 	npm install -g bower
 }
 
-apt-get install -y build-essential libssl-dev git nginx php5-fpm php5-cli php5-mcrypt php5-imagick php5-curl php5-mysql php5-sqlite || die
+apt-get install -y build-essential libssl-dev git nginx php5-fpm php5-cli php5-mcrypt php5-imagick php5-curl php5-mysql php5-sqlite openjdk-7-jre || die
 # mcrypt needs to be manually enabled
 ln -sf /etc/php5/mods-available/mcrypt.ini /etc/php5/fpm/conf.d/20-mcrypt.ini
 ln -sf /etc/php5/mods-available/mcrypt.ini /etc/php5/cli/conf.d/20-mcrypt.ini
@@ -62,6 +62,17 @@ hash composer 2>/dev/null || {
 	chmod +x composer.phar
 	mv composer.phar /usr/local/bin/composer
 }
+
+
+# ElasticSearch
+if [[ ! -d /usr/share/elasticsearch ]]; then
+	echo ">>> Installing ElasticSearch <<<"
+	wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+	echo "deb http://packages.elastic.co/elasticsearch/1.6/debian stable main" | tee -a /etc/apt/sources.list
+	apt-get update && apt-get install -y elasticsearch
+	update-rc.d elasticsearch defaults 95 10
+	service elasticsearch start
+fi
 
 echo "Updating Composer..."
 composer self-update
