@@ -40,7 +40,7 @@ hash bower 2>/dev/null || {
 	npm install -g bower
 }
 
-apt-get install -y build-essential libssl-dev git nginx php5-fpm php5-cli php5-mcrypt php5-imagick php5-curl php5-mysql || die
+apt-get install -y build-essential libssl-dev git nginx php5-fpm php5-cli php5-mcrypt php5-imagick php5-curl php5-mysql php5-sqlite || die
 # mcrypt needs to be manually enabled
 ln -sf /etc/php5/mods-available/mcrypt.ini /etc/php5/fpm/conf.d/20-mcrypt.ini
 ln -sf /etc/php5/mods-available/mcrypt.ini /etc/php5/cli/conf.d/20-mcrypt.ini
