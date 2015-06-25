@@ -13,18 +13,6 @@ die() {
 #ls colligator-backend > /dev/null || die "Did you forget to clone colligator-backend? See readme.md"
 
 #-------------------------------------------------------------------------
-# GitHub
-#-------------------------------------------------------------------------
-
-cd /provision
-GITHUB_KEY="$( cat github_token 2>/dev/null | xargs )"
-test -z "$GITHUB_KEY" && die "No GitHub key provided. Please create a file 'github_token'."
-
-mkdir -p /root/.composer && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /root/.composer/auth.json || die
-mkdir -p /home/vagrant/.composer/ && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /home/vagrant/.composer/auth.json || die
-chown vagrant:vagrant /home/vagrant/.composer/auth.json
-
-#-------------------------------------------------------------------------
 # Install and configure PHP, NodeJS, Nginx, ...
 #-------------------------------------------------------------------------
 
@@ -159,8 +147,27 @@ bower install --config.interactive=false --allow-root
 
 cd /var/www/backend || die
 if [[ ! -f composer.lock ]]; then
+
 	echo "Backend: Installing Composer packages"
-	composer install --no-progress --prefer-dist
+
+	GITHUB_KEY="$( cat /provision/github_token 2>/dev/null | xargs )"
+	if [[ -z "$GITHUB_KEY" ]]; then
+		echo --------------------------------------------------------------------
+		echo No 'github_token' found! Composer package installation will be slow.
+		echo --------------------------------------------------------------------
+
+		composer install --no-progress --no-interaction --prefer-source
+
+	else
+
+		mkdir -p /root/.composer && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /root/.composer/auth.json || die
+		mkdir -p /home/vagrant/.composer/ && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /home/vagrant/.composer/auth.json || die
+		chown vagrant:vagrant /home/vagrant/.composer/auth.json
+
+		composer install --no-progress --no-interaction --prefer-dist
+
+	fi
+
 	cp .env.example .env
 	php artisan key:generate
 	echo ----------------------------------------------------------------
