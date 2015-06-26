@@ -9,8 +9,12 @@ die() {
     exit 1
 }
 
-#ls colligator-frontend > /dev/null || die "Did you forget to clone colligator-frontend? See readme.md"
-#ls colligator-backend > /dev/null || die "Did you forget to clone colligator-backend? See readme.md"
+ls colligator-frontend > /dev/null || die "Did you forget to clone colligator-frontend? See readme.md"
+ls colligator-backend > /dev/null || die "Did you forget to clone colligator-backend? See readme.md"
+
+# MOTD
+rm -f /etc/update-motd.d/00-header /etc/update-motd.d/10-help-text /etc/update-motd.d/50-landscape-sysinfo /etc/update-motd.d/51-cloudguest
+cp -f /provision/motd.tcl /etc/update-motd.d/00-colligator
 
 #-------------------------------------------------------------------------
 # Install and configure PHP, NodeJS, Nginx, ...
@@ -28,7 +32,7 @@ hash bower 2>/dev/null || {
 	npm install -g bower
 }
 
-apt-get install -y build-essential libssl-dev git nginx php5-fpm php5-cli php5-mcrypt php5-imagick php5-curl php5-mysql php5-sqlite openjdk-7-jre || die
+apt-get install -y build-essential tclsh libssl-dev git nginx php5-fpm php5-cli php5-mcrypt php5-imagick php5-curl php5-mysql php5-sqlite openjdk-7-jre || die
 # mcrypt needs to be manually enabled
 ln -sf /etc/php5/mods-available/mcrypt.ini /etc/php5/fpm/conf.d/20-mcrypt.ini
 ln -sf /etc/php5/mods-available/mcrypt.ini /etc/php5/cli/conf.d/20-mcrypt.ini
