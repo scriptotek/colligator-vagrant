@@ -18,6 +18,7 @@ server {
         alias /var/www/backend/public/ ;
         index index.php ;
 
+        # Serve .php using FastCGI
         location ~* \.php {
             include fastcgi_params;
             fastcgi_pass unix:/var/run/php5-fpm.sock;
@@ -26,6 +27,12 @@ server {
             fastcgi_index index.php;
         }
 
+        # Serve URLs with other file endings directly
+        location ~ "\.[a-z]{2,4}$" {
+
+        }
+
+        # Rewrite anything else to index.php
         rewrite ^/.* /api/index.php;
     }
 
