@@ -7,37 +7,36 @@ server {
     ssl_certificate     /etc/nginx/server.crt;
     ssl_certificate_key /etc/nginx/server.key;
 
-    root /var/www;
+    root /var/www/frontend;
     index index.html;
     autoindex on;
+    fastcgi_intercept_errors on;
 
     # Important for VirtualBox
     sendfile off;
 
-    location /api/ {
-        alias /var/www/backend/public/ ;
-        index index.php ;
+    location /api {
+        root /var/www/backend/public ;
+        rewrite ^/api/([^.]+\.[^.]+)$ /$1 break;
+        try_files $uri $uri/ /api/index.php$is_args$args;
 
         # Serve .php using FastCGI
         location ~* \.php {
+        rewrite ^/api/(.*)$ /$1 break;
+
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        try_files $uri =404;
+
             include fastcgi_params;
             fastcgi_pass unix:/var/run/php5-fpm.sock;
-            # fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_param SCRIPT_FILENAME $document_root/$fastcgi_script_name;
             fastcgi_cache off;
             fastcgi_index index.php;
         }
 
-        # Serve URLs with other file endings directly
-        location ~ "\.[a-z]{2,4}$" {
-
-        }
-
-        # Rewrite anything else to index.php
-        rewrite ^/.* /api/index.php;
     }
 
     location / {
-        alias /var/www/frontend/ ;
         try_files $uri $uri/ =404;
     }
 
