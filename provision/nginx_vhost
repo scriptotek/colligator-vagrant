@@ -7,13 +7,18 @@ server {
     ssl_certificate     /etc/nginx/server.crt;
     ssl_certificate_key /etc/nginx/server.key;
 
-    root /var/www/frontend;
     index index.html;
     autoindex on;
     fastcgi_intercept_errors on;
 
     # Important for VirtualBox
     sendfile off;
+
+    location /covers {
+        root /var/www/backend/public/covers ;
+        rewrite ^/covers/([^.]+\.[^.]+)$ /$1 break;
+        try_files $uri $uri/ =404;
+    }
 
     location /api {
         root /var/www/backend/public ;
@@ -37,6 +42,7 @@ server {
     }
 
     location / {
+        root /var/www/frontend;
         try_files $uri $uri/ =404;
     }
 
