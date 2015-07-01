@@ -63,6 +63,8 @@ if [[ ! -d /usr/share/elasticsearch ]]; then
 	echo "deb http://packages.elastic.co/elasticsearch/1.6/debian stable main" | tee -a /etc/apt/sources.list
 	apt-get update && apt-get install -y elasticsearch
 	update-rc.d elasticsearch defaults 95 10
+
+	sed -ri 's/^#?PID_DIR=\/var\/run\/elasticsearch/PID_DIR=\/var\/run/g' /etc/default/elasticsearch
 	service elasticsearch start
 fi
 
