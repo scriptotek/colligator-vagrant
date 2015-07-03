@@ -9,8 +9,8 @@ die() {
     exit 1
 }
 
-ls colligator-frontend > /dev/null || die "Did you forget to clone colligator-frontend? See readme.md"
-ls colligator-backend > /dev/null || die "Did you forget to clone colligator-backend? See readme.md"
+ls /var/www/frontend > /dev/null || die "Did you forget to clone colligator-frontend? See readme.md"
+ls /var/www/backend > /dev/null || die "Did you forget to clone colligator-backend? See readme.md"
 
 # MOTD
 rm -f /etc/update-motd.d/00-header /etc/update-motd.d/10-help-text /etc/update-motd.d/50-landscape-sysinfo /etc/update-motd.d/51-cloudguest
