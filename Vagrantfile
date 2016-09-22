@@ -12,7 +12,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # config.vm.network "forwarded_port", guest: 3306, host: 4206, auto_correct: true
 
   config.vm.provider "virtualbox" do |v|
+    v.name = "colligator"
     v.memory = 2048
+
+    # Set the timesync threshold to 10 seconds, instead of the default 20 minutes.
+    # If the clock gets more than 15 minutes out of sync (due to your laptop going
+    # to sleep for instance, then some 3rd party services will reject requests.
+    v.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 10000]
 
     # Use the NAT hosts DNS resolver as it's faster
     # <http://serverfault.com/a/595010/221948>
