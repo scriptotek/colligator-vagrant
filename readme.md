@@ -8,6 +8,7 @@ in the `provision` directory.
 
     git clone git@github.com:scriptotek/colligator-frontend.git
     git clone git@github.com:scriptotek/colligator-backend.git
+    git clone git@github.com:scriptotek/colligator-editor.git
     vagrant up
 
 should bring up a Ubuntu dev server on http://172.28.128.9/
@@ -17,10 +18,12 @@ Use `vagrant ssh` to SSH into the box. You'll find
 
 * `colligator-frontend` mounted at `/var/www/frontend`
 * `colligator-backend` mounted at `/var/www/backend`
+* `colligator-editor` mounted at `/var/www/editor`
 
 Nginx setup:
 
 * `/api` → `/var/www/backend/public`
+* `/editor` → `/var/www/editor`
 * `/` → `/var/www/frontend`
 
 Open ports:

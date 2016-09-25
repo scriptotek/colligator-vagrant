@@ -2,3 +2,4 @@ github_token
 .vagrant
 colligator-backend
 colligator-frontend
+colligator-editor
