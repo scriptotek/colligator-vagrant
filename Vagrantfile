@@ -5,7 +5,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "centos/7"
   config.vm.hostname = "colligator-test"
   config.vm.network "private_network", ip: "172.28.128.9"
   # config.vm.network "forwarded_port", guest: 80, host: 4280, auto_correct: true
