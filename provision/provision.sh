@@ -46,6 +46,12 @@ yum install -y vim \
 cp -f /provision/motd.sh /etc/profile.d/motd.sh
 
 
+# Disable SELinux when using Vagrant since we cannot easily set
+# security contexts on folders mounted from the host machine
+# (It's possible, but not easy.. https://github.com/mitchellh/vagrant/issues/6970)
+sed -ri 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+setenforce 0
+
 # PG_REPO_APT_SOURCE=/etc/apt/sources.list.d/pgdg.list
 # if [ ! -f "$PG_REPO_APT_SOURCE" ]
 # then
@@ -143,26 +149,28 @@ fi
 
 echo ">>> Configuring Apache"
 
-mkdir -p /etc/apache2/ssl
-if [[ ! -e /etc/apache2/ssl/server.key ]]; then
+mkdir -p /etc/httpd/ssl
+if [[ ! -e /etc/httpd/ssl/server.key ]]; then
 	echo "Generate Apache server private key..."
-	genrsa="$(openssl genrsa -out /etc/apache2/ssl/server.key 2048 2>&1)"
+	genrsa="$(openssl genrsa -out /etc/httpd/ssl/server.key 2048 2>&1)"
 	echo $genrsa
 fi
-if [[ ! -e /etc/apache2/ssl/server.csr ]]; then
+if [[ ! -e /etc/httpd/ssl/server.csr ]]; then
 	echo "Generate Certificate Signing Request (CSR)..."
-	openssl req -new -batch -key /etc/apache2/ssl/server.key -out /etc/apache2/ssl/server.csr
+	openssl req -new -batch -key /etc/httpd/ssl/server.key -out /etc/httpd/ssl/server.csr
 fi
-if [[ ! -e /etc/apache2/ssl/server.crt ]]; then
+if [[ ! -e /etc/httpd/ssl/server.crt ]]; then
 	echo "Sign the certificate using the above private key and CSR..."
-	signcert="$(openssl x509 -req -days 365 -in /etc/apache2/ssl/server.csr -signkey /etc/apache2/ssl/server.key -out /etc/apache2/ssl/server.crt 2>&1)"
+	signcert="$(openssl x509 -req -days 365 -in /etc/httpd/ssl/server.csr -signkey /etc/httpd/ssl/server.key -out /etc/httpd/ssl/server.crt 2>&1)"
 	echo $signcert
 fi
 
 cp /provision/colligator.conf /etc/httpd/conf.d/colligator.conf
 
-systemctl enable apache2
+systemctl enable httpd
 systemctl enable php-fpm
+systemctl restart httpd
+systemctl restart php-fpm
 
 # ln -sf /etc/nginx/sites-available/nginx_vhost /etc/nginx/sites-enabled/
 # rm -f /etc/nginx/sites-enabled/default
@@ -195,7 +203,7 @@ hash psql 2>/dev/null || {
 	yum install -y postgresql96-server
 	systemctl enable postgresql-9.6
 
-	/usr/pgsql-9.6/bin/initdb -D /var/lib/pgsql/9.6/data/ -U postgres
+	su - postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/lib/pgsql/9.6/data/ -U postgres"
 
 	# PG_CONF="/etc/postgresql/$PG_VERSION/main/postgresql.conf"
 	# PG_HBA="/etc/postgresql/$PG_VERSION/main/pg_hba.conf"
@@ -209,6 +217,7 @@ hash psql 2>/dev/null || {
 
 # 	# Explicitly set default client_encoding
 # 	echo "client_encoding = utf8" >> "$PG_CONF"
+	systemctl restart postgresql-9.6
 
 	cat << EOF | su - postgres -c psql
 -- Create the database user:
@@ -222,55 +231,55 @@ CREATE DATABASE $APP_DB_NAME WITH OWNER=$APP_DB_USER
                                   TEMPLATE=template0;
 EOF
 
-	systemctl restart postgresql-9.6
 }
 
-# #-------------------------------------------------------------------------
-# # Frontend
-# #-------------------------------------------------------------------------
+#-------------------------------------------------------------------------
+# Frontend
+#-------------------------------------------------------------------------
 
-# cd /var/www/frontend || die
+cd /var/www/frontend || die
 
-# # npm config set spin false
-# # npm config set loglevel warn
-# echo "Frontend: Installing npm packages"
-# yarn install
-# echo "Frontend: Installing bower packages"
-# bower install --config.interactive=false --allow-root
+# npm config set spin false
+# npm config set loglevel warn
+echo "Frontend: Installing npm packages"
+yarn install
+echo "Frontend: Installing bower packages"
+bower install --config.interactive=false --allow-root
 
-# #-------------------------------------------------------------------------
-# # Backend
-# #-------------------------------------------------------------------------
+#-------------------------------------------------------------------------
+# Backend
+#-------------------------------------------------------------------------
 
-# cd /var/www/backend || die
-# if [[ ! -f composer.lock ]]; then
+cd /var/www/backend || die
+if [[ ! -f composer.lock ]]; then
 
-# 	echo "Backend: Installing Composer packages"
+	echo "Backend: Installing Composer packages"
 
-# 	GITHUB_KEY="$( cat /provision/github_token 2>/dev/null | xargs )"
-# 	if [[ -z "$GITHUB_KEY" ]]; then
-# 		echo --------------------------------------------------------------------
-# 		echo No 'github_token' found! Composer package installation will be slow.
-# 		echo --------------------------------------------------------------------
+	GITHUB_KEY="$( cat /provision/github_token 2>/dev/null | xargs )"
+	if [[ -z "$GITHUB_KEY" ]]; then
+		echo --------------------------------------------------------------------
+		echo No 'github_token' found! Composer package installation will be slow.
+		echo --------------------------------------------------------------------
 
-# 		composer install --no-progress --no-interaction --prefer-source
+		composer install --no-progress --no-interaction --prefer-source
 
-# 	else
+	else
 
-# 		mkdir -p /root/.composer && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /root/.composer/auth.json || die
-# 		mkdir -p /home/vagrant/.composer/ && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /home/vagrant/.composer/auth.json || die
-# 		chown vagrant:vagrant /home/vagrant/.composer/auth.json
+		mkdir -p /root/.composer && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /root/.composer/auth.json || die
+		mkdir -p /home/vagrant/.composer/ && echo "{ \"github-oauth\": { \"github.com\": \"$GITHUB_KEY\" } }" >| /home/vagrant/.composer/auth.json || die
+		chown vagrant:vagrant /home/vagrant/.composer/auth.json
 
-# 		composer install --no-progress --no-interaction --prefer-dist
+		composer install --no-progress --no-interaction --prefer-dist
 
-# 	fi
+	fi
 
-# 	cp .env.example .env
-# 	php artisan key:generate
-# 	echo ----------------------------------------------------------------
-# 	echo Copied '.env.example' to '.env'. You might want to modify it...
-# 	echo ----------------------------------------------------------------
-# # else
-# 	# echo "Backend: Updating Composer packages"
-# 	# composer update --no-progress --prefer-dist
-# fi
+	cp .env.example .env
+	php artisan migrate
+	php artisan key:generate
+	echo ----------------------------------------------------------------
+	echo Copied '.env.example' to '.env'. You might want to modify it...
+	echo ----------------------------------------------------------------
+# else
+	# echo "Backend: Updating Composer packages"
+	# composer update --no-progress --prefer-dist
+fi

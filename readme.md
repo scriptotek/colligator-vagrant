@@ -11,8 +11,8 @@ in the `provision` directory.
     git clone git@github.com:scriptotek/colligator-editor.git
     vagrant up
 
-should bring up a Ubuntu dev server on http://172.28.128.9/
-with Nginx, PHP 5.5, MySQL and ElasticSearch installed.
+should bring up a Centos 7 dev server on http://172.28.128.9/
+with Apache, PHP 7.0, MySQL and ElasticSearch installed.
 
 Use `vagrant ssh` to SSH into the box. You'll find
 
@@ -20,7 +20,7 @@ Use `vagrant ssh` to SSH into the box. You'll find
 * `colligator-backend` mounted at `/var/www/backend`
 * `colligator-editor` mounted at `/var/www/editor`
 
-Nginx setup:
+Apache setup:
 
 * `/api` → `/var/www/backend/public`
 * `/editor` → `/var/www/editor`
